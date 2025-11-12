@@ -114,23 +114,14 @@
 </style>
 </head>
 <body>
-  <h1>APP 下载链接生成器</h1>
+  <h1>APP下载链接生成器</h1>
 
   <label>UID（用户代号）</label><br/>
   <input id="uid" type="text" placeholder="例如：user123" />
 
   <h3>请选择下载版本：</h3>
   <div class="btn-versions" id="versionContainer">
-    <button class="version-btn" data-version="1">版本 1</button>
-    <button class="version-btn" data-version="2">版本 2</button>
-    <button class="version-btn" data-version="3">版本 3</button>
-    <button class="version-btn" data-version="4">版本 4</button>
-    <button class="version-btn" data-version="5">版本 5</button>
-    <button class="version-btn" data-version="6">版本 6</button>
-    <button class="version-btn" data-version="7">版本 7</button>
-    <button class="version-btn" data-version="8">版本 8</button>
-    <button class="version-btn" data-version="9">版本 9</button>
-    <button class="version-btn" data-version="10">版本 10</button>
+    <!-- 动态载入按钮 -->
   </div>
 
   <button id="generate" class="btn-main">⚙️ 生成短链接</button>
@@ -142,18 +133,34 @@
 const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ 短链生成 Worker
 const baseDownload = "https://pwapp.genapp.workers.dev/";  // ✅ 主下载域名
 const secret = "mySuperSecretKey"; // ✅ 与主 Worker 保持一致
+const jsonURL = "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json"; // ✅ GitHub JSON
 let selectedVersion = null;
 let generating = false;
 
-// === 版本按钮 ===
-document.querySelectorAll(".version-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
-    selectedVersion = btn.dataset.version;
-    document.getElementById("output").textContent = `✅ 已选择版本 ${selectedVersion}`;
-  });
-});
+// === 从 JSON 动态载入版本按钮 ===
+async function loadVersions() {
+  const container = document.getElementById("versionContainer");
+  try {
+    const res = await fetch(jsonURL);
+    const data = await res.json();
+    data.downloads.forEach(app => {
+      const btn = document.createElement("button");
+      btn.className = "version-btn";
+      btn.dataset.version = app.zone;
+      btn.textContent = app.name;
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedVersion = app.zone;
+        document.getElementById("output").textContent = `✅ 已选择 ${app.name}`;
+      });
+      container.appendChild(btn);
+    });
+  } catch (err) {
+    document.getElementById("output").textContent = `❌ 载入版本信息失败：${err.message}`;
+  }
+}
+loadVersions();
 
 // === 签名函数 ===
 async function sign(text, key) {
@@ -207,7 +214,7 @@ document.getElementById("generate").addEventListener("click", async () => {
 
     if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
 
-    output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a><br><br>📄 ${data.title}`;
+    output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a><br><br>📄 ${data.title || ""}`;
     copyBtn.classList.remove("hidden");
 
     copyBtn.onclick = () => {
