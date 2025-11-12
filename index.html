@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -72,9 +72,10 @@
   <label>UID（用户代号）</label><br>
   <input id="uid" type="text" placeholder="例如：user123" /><br>
 
-  <!-- 隐藏 Worker 与 Secret -->
+  <!-- ⚙️ 你的 Worker 域名 -->
   <input id="workerBaseUrl" type="hidden" value="https://pwapp.genapp.workers.dev/" />
-  <input id="shortAPI" type="hidden" value="sk_XivcX9OAHYNBX5oq" />
+
+  <!-- ⚙️ 密钥（与 Worker 一致） -->
   <input id="secretKey" type="hidden" value="mySuperSecretKey" />
 
   <h3>请选择下载版本：</h3>
@@ -87,7 +88,6 @@
   </div>
 
   <button id="generate" class="btn-main">⚙️ 生成专属链接</button>
-  <button id="shorten" class="btn-main hidden">🔗 生成短链接</button>
   <pre id="output">👉 先选择版本，然后点击“生成专属链接”</pre>
   <button class="btn-main hidden" id="copyBtn">📋 复制链接</button>
 
@@ -123,7 +123,6 @@ document.getElementById("generate").addEventListener("click", async () => {
   const secret = document.getElementById("secretKey").value.trim();
   const output = document.getElementById("output");
   const copyBtn = document.getElementById("copyBtn");
-  const shortenBtn = document.getElementById("shorten");
 
   if (!uid) return alert("请输入 UID");
   if (!selectedZone) return alert("请选择一个版本");
@@ -133,48 +132,12 @@ document.getElementById("generate").addEventListener("click", async () => {
 
   output.textContent = longUrl;
   copyBtn.classList.remove("hidden");
-  shortenBtn.classList.remove("hidden");
 
   copyBtn.onclick = () => {
     navigator.clipboard.writeText(longUrl);
     copyBtn.textContent = "✅ 已复制";
     setTimeout(() => copyBtn.textContent = "📋 复制链接", 2000);
   };
-
-  // 保存当前长链接用于短链生成
-  shortenBtn.dataset.url = longUrl;
-});
-
-// === 生成短链接 ===
-document.getElementById("shorten").addEventListener("click", async () => {
-  const shortenBtn = document.getElementById("shorten");
-  const api = document.getElementById("shortAPI").value.trim();
-  const longUrl = shortenBtn.dataset.url;
-  const output = document.getElementById("output");
-  const copyBtn = document.getElementById("copyBtn");
-
-  if (!longUrl) return alert("请先生成长链接！");
-
-  shortenBtn.textContent = "⏳ 生成中...";
-  try {
-    const res = await fetch(api, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ longURL: longUrl })
-    });
-    const data = await res.json();
-
-    if (!data.shortURL) throw new Error("短链生成失败");
-    output.textContent = data.shortURL;
-
-    navigator.clipboard.writeText(data.shortURL);
-    copyBtn.textContent = "✅ 已复制短链";
-    shortenBtn.textContent = "🔗 生成短链接";
-  } catch (e) {
-    shortenBtn.textContent = "❌ 生成失败";
-    output.textContent = "短链生成失败：" + e.message;
-    setTimeout(() => shortenBtn.textContent = "🔗 生成短链接", 2500);
-  }
 });
 </script>
 </body>
