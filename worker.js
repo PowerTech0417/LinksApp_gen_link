@@ -17,17 +17,12 @@ export default {
       const { longURL, uid, version, redirect } = await request.json();
       if (!longURL) throw new Error("Missing longURL");
 
-      // === 🧩 Short.io 配置 ===
-      const SHORTIO_DOMAIN = "appwt.short.gy"; // ✅ 你的短链接域名
+      // === 🔗 Short.io 配置 ===
+      const SHORTIO_DOMAIN = "appwt.short.gy"; // ✅ 短链接域名
       const SHORTIO_SECRET_KEY = env.SHORTIO_SECRET_KEY || "sk_XivcX9OAHYNBX5oq"; // ✅ API Key
 
-      // === 📱 从 UA 识别设备 / APP ===
-      const ua = request.headers.get("User-Agent") || "";
-      const appType = detectApp(ua);
-
-      // === 🧠 智能标题区（自动组合标题）===
-      let title = "📦 OTT 下载链接";
-      if (appType) title += ` · ${appType}`;
+      // === 🧠 自动标题 ===
+      let title = "📦";
       if (version) title += ` v${version}`;
 
       // 🇲🇾 加入马来西亚日期
@@ -36,7 +31,7 @@ export default {
       if (uid) title += ` (${uid} · ${dateMY})`;
       else title += ` (${dateMY})`;
 
-      // === 🔁 自动生成唯一短链 ID ===
+      // === 🆔 自动生成唯一短链 ID ===
       let id, shortData;
       for (let i = 0; i < 5; i++) {
         id = "id" + Math.floor(1000 + Math.random() * 90000);
@@ -68,7 +63,7 @@ export default {
 
       if (!shortData) throw new Error("无法生成短链接，请稍后重试。");
 
-      // === 📺 redirect 模式（TV 设备跳转）===
+      // === redirect 模式 ===
       if (redirect === true || redirect === "1") {
         return Response.redirect(shortData.shortURL, 302);
       }
@@ -78,7 +73,6 @@ export default {
         JSON.stringify({
           shortURL: shortData.shortURL,
           title,
-          appType,
           id,
           createdAt: new Date().toISOString(),
         }),
@@ -105,4 +99,4 @@ function corsHeaders() {
     "Access-Control-Allow-Credentials": "true",
     "Content-Type": "application/json",
   };
-}
+    }
