@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 生成专属下载链接</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    padding: 2em;
+    max-width: 600px;
+    margin: auto;
+    background: radial-gradient(circle at top, #101825, #050910);
+    color: #eaf0ff;
+  }
+  h1 { text-align: center; color: #00e0ff; }
+  label { display:block; margin-top:1em; font-weight:bold; }
+  input, select { width:100%; padding:8px; border-radius:6px; border:none; margin-top:4px; }
+  button { padding:10px 16px; margin-top:1em; border:none; border-radius:8px; cursor:pointer; background:#00e0ff; color:#001; }
+  pre { background:#000a1a; padding:10px; border-radius:8px; margin-top:10px; overflow-x:auto; }
+</style>
+</head>
+<body>
+  <h1>🔐 下载链接生成器</h1>
+
+  <label>Worker 网址（Cloudflare）</label>
+  <input id="baseUrl" type="url" value="https://shortenworld.com/" />
+
+  <label>UID（用户代号）</label>
+  <input id="uid" type="text" value="user123" />
+
+  <label>下载版本（区）</label>
+  <select id="zone">
+    <option value="1">版本 1</option>
+    <option value="2">版本 2</option>
+    <option value="3">版本 3</option>
+    <option value="4">版本 4</option>
+    <option value="5">版本 5</option>
+  </select>
+
+  <label>签名密钥（必须与 Worker 一致）</label>
+  <input id="secret" type="text" value="mySuperSecretKey" />
+
+  <button id="generate">生成专属链接</button>
+
+  <pre id="output">等待生成...</pre>
+
+<script>
+async function hmacSha256Hex(key, text) {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(text));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+document.getElementById("generate").addEventListener("click", async () => {
+  const base = document.getElementById("baseUrl").value.trim();
+  const uid = document.getElementById("uid").value.trim();
+  const zone = document.getElementById("zone").value.trim();
+  const secret = document.getElementById("secret").value.trim();
+  if (!base || !uid || !secret) return alert("请填写完整信息");
+
+  const sig = await hmacSha256Hex(secret, `${uid}:${zone}`);
+  const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${zone}&sig=${sig}`;
+
+  document.getElementById("output").textContent = final;
+});
+</script>
+</body>
+</html>
