@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env, ctx) {
-    // ✅ CORS 处理
+    // ✅ 处理 CORS
     if (request.method === "OPTIONS") {
       return new Response("", { headers: corsHeaders() });
     }
@@ -18,21 +18,21 @@ export default {
       if (!longURL) throw new Error("Missing longURL");
 
       // === 🧩 Short.io 配置 ===
-      const SHORTIO_DOMAIN = "appwt.short.gy"; // ✅ 短链接域名
-      const SHORTIO_SECRET_KEY = env.SHORTIO_SECRET_KEY || "sk_XivcX9OAHYNBX5oq"; // ✅ API Key
+      const SHORTIO_DOMAIN = "appwt.short.gy";
+      const SHORTIO_SECRET_KEY = env.SHORTIO_SECRET_KEY || "sk_XivcX9OAHYNBX5oq";
 
-      // === 🧠 标题（自动组合）===
+      // === 🧠 标题 ===
       let title = "📦";
       if (version) title += ` v${version}`;
-
-      // 🇲🇾 加入马来西亚日期
       const malaysiaNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
       const dateMY = malaysiaNow.toISOString().slice(0, 10);
       title += uid ? ` (${uid} · ${dateMY})` : ` (${dateMY})`;
 
-      // === 🧱 防重复：自动尝试 5 次生成短链 ===
+      // === 🧱 防重复（最多尝试 5 次）===
       let shortData = null;
-      for (let attempt = 1; attempt <= 5; attempt++) {
+      let attempt = 0;
+
+      for (attempt = 1; attempt <= 5; attempt++) {
         const id = "id" + Math.floor(1000 + Math.random() * 90000);
 
         const response = await fetch("https://api.short.io/links", {
@@ -49,20 +49,21 @@ export default {
           }),
         });
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error("Short.io 返回错误: " + text);
+        }
 
         if (response.ok && data.shortURL) {
           shortData = data;
           break;
         }
 
-        if (data.error && data.error.includes("already exists")) {
-          console.log(`⚠️ 第 ${attempt} 次冲突，重试...`);
-          continue;
-        }
-
-        if (attempt === 5)
-          throw new Error(data.error || "短链接生成失败，请稍后重试。");
+        if (data.error && data.error.includes("already exists")) continue;
+        if (attempt === 5) throw new Error(data.error || "短链接生成失败，请稍后重试。");
       }
 
       if (!shortData) throw new Error("生成短链接失败（超过最大重试次数）");
@@ -77,14 +78,13 @@ export default {
         JSON.stringify({
           shortURL: shortData.shortURL,
           title,
+          attempts: attempt,
           id: shortData.idString || shortData.path,
           createdAt: new Date().toISOString(),
         }),
-        {
-          status: 200,
-          headers: corsHeaders(),
-        }
+        { status: 200, headers: corsHeaders() }
       );
+
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
