@@ -3,47 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔐 生成专属下载链接</title>
+<title>🔐 下载链接生成器</title>
 <style>
   body {
     font-family: system-ui, sans-serif;
-    padding: 2em;
-    max-width: 600px;
-    margin: auto;
-    background: radial-gradient(circle at top, #101825, #050910);
+    background: radial-gradient(circle at top, #0a0f1c, #02040a);
     color: #eaf0ff;
+    text-align: center;
+    padding: 2em;
   }
-  h1 { text-align: center; color: #00e0ff; }
-  label { display:block; margin-top:1em; font-weight:bold; }
-  input, select { width:100%; padding:8px; border-radius:6px; border:none; margin-top:4px; }
-  button { padding:10px 16px; margin-top:1em; border:none; border-radius:8px; cursor:pointer; background:#00e0ff; color:#001; }
-  pre { background:#000a1a; padding:10px; border-radius:8px; margin-top:10px; overflow-x:auto; }
+  h1 { color: #00e0ff; margin-bottom: 1em; }
+  .btn-zone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1em;
+    margin: 2em 0;
+  }
+  button.zone {
+    background: #00e0ff;
+    border: none;
+    color: #000;
+    font-weight: bold;
+    padding: 14px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: transform 0.15s ease, background 0.3s;
+  }
+  button.zone:hover {
+    transform: scale(1.05);
+    background: #00b0cc;
+  }
+  input {
+    width: 80%;
+    max-width: 300px;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+    margin-top: 6px;
+  }
+  pre {
+    background: #000a1a;
+    color: #0ff;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .hidden { display: none; }
+  .copy-btn {
+    background: #0ff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
-  <h1>🔐 下载链接生成器</h1>
+  <h1>🔗 生成下载链接</h1>
 
-  <label>Worker 网址（Cloudflare）</label>
-  <input id="baseUrl" type="url" value="https://shortenworld.com/" />
+  <label>UID（用户代号）</label><br>
+  <input id="uid" type="text" placeholder="例如：user123" /><br>
 
-  <label>UID（用户代号）</label>
-  <input id="uid" type="text" value="user123" />
+  <!-- 隐藏 Worker 与 Secret -->
+  <input id="workerBaseUrl" type="hidden" value="https://shortenworld.com/" />
+  <input id="secretKey" type="hidden" value="mySuperSecretKey" />
 
-  <label>下载版本（区）</label>
-  <select id="zone">
-    <option value="1">版本 1</option>
-    <option value="2">版本 2</option>
-    <option value="3">版本 3</option>
-    <option value="4">版本 4</option>
-    <option value="5">版本 5</option>
-  </select>
+  <div class="btn-zone">
+    <button class="zone" data-zone="1">安卓电视</button>
+    <button class="zone" data-zone="2">手机/平板</button>
+    <button class="zone" data-zone="3">tvbox版</button>
+    <button class="zone" data-zone="4">安卓投影仪</button>
+    <button class="zone" data-zone="5">英文版</button>
+  </div>
 
-  <label>签名密钥（必须与 Worker 一致）</label>
-  <input id="secret" type="text" value="mySuperSecretKey" />
-
-  <button id="generate">生成专属链接</button>
-
-  <pre id="output">等待生成...</pre>
+  <pre id="output">点击版本按钮生成下载链接</pre>
+  <button class="copy-btn hidden" id="copyBtn">复制链接</button>
 
 <script>
 async function hmacSha256Hex(key, text) {
@@ -57,17 +97,28 @@ async function hmacSha256Hex(key, text) {
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
-document.getElementById("generate").addEventListener("click", async () => {
-  const base = document.getElementById("baseUrl").value.trim();
-  const uid = document.getElementById("uid").value.trim();
-  const zone = document.getElementById("zone").value.trim();
-  const secret = document.getElementById("secret").value.trim();
-  if (!base || !uid || !secret) return alert("请填写完整信息");
+document.querySelectorAll(".zone").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const uid = document.getElementById("uid").value.trim();
+    const base = document.getElementById("workerBaseUrl").value.trim();
+    const secret = document.getElementById("secretKey").value.trim();
+    const zone = btn.dataset.zone;
+    const output = document.getElementById("output");
+    const copyBtn = document.getElementById("copyBtn");
 
-  const sig = await hmacSha256Hex(secret, `${uid}:${zone}`);
-  const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${zone}&sig=${sig}`;
+    if (!uid) return alert("请输入 UID");
 
-  document.getElementById("output").textContent = final;
+    const sig = await hmacSha256Hex(secret, `${uid}:${zone}`);
+    const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${zone}&sig=${sig}`;
+
+    output.textContent = final;
+    copyBtn.classList.remove("hidden");
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(final);
+      copyBtn.textContent = "✅ 已复制";
+      setTimeout(() => copyBtn.textContent = "复制链接", 2000);
+    };
+  });
 });
 </script>
 </body>
