@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 智能短链接生成器</title>
+<title>🔗 智能下载链接生成器</title>
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -84,7 +84,7 @@
 </style>
 </head>
 <body>
-  <h1>🔗 智能短链接生成器</h1>
+  <h1>🔗 智能下载链接生成器</h1>
 
   <label>UID（用户代号）</label><br/>
   <input id="uid" type="text" placeholder="例如：user123" />
@@ -109,7 +109,9 @@
   <pre id="output">👉 输入 UID，选择版本，然后点击“生成短链接”</pre>
 
 <script>
-const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ 你的 Cloudflare Worker 域名
+const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ Cloudflare Worker
+const baseDownload = "https://pwapp.genapp.workers.dev/";  // ✅ 主下载域名
+const secret = "mySuperSecretKey"; // 🔐 签名密钥（要和主下载Worker一致）
 let selectedVersion = null;
 
 // === 版本按钮点击事件 ===
@@ -121,6 +123,19 @@ document.querySelectorAll(".version-btn").forEach(btn => {
     document.getElementById("output").textContent = `✅ 已选择版本 ${selectedVersion}`;
   });
 });
+
+// === 签名函数 ===
+async function sign(text, key) {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 // === 生成短链接 ===
 document.getElementById("generate").addEventListener("click", async () => {
@@ -134,16 +149,21 @@ document.getElementById("generate").addEventListener("click", async () => {
   output.textContent = "⏳ 正在生成短链接，请稍候...";
 
   try {
+    // 🧾 生成签名 + 完整下载链接
+    const sig = await sign(`${uid}:${selectedVersion}`, secret);
+    const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
+
+    // 📨 发送请求到 Worker
     const res = await fetch(workerURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid, version: selectedVersion })
+      body: JSON.stringify({ longURL, uid, version: selectedVersion })
     });
 
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    output.textContent = `✅ 短链接生成成功：\n${data.shortURL}\n\n📄 标题：${data.title}`;
+    output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank">${data.shortURL}</a><br><br>📄 ${data.title}`;
     copyBtn.classList.remove("hidden");
 
     copyBtn.onclick = () => {
@@ -156,5 +176,3 @@ document.getElementById("generate").addEventListener("click", async () => {
   }
 });
 </script>
-</body>
-</html>
