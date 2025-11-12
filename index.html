@@ -129,7 +129,9 @@
   <button id="copyBtn" class="btn-main hidden">📋 复制短链接</button>
 
 <script>
-const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ Worker 域名
+const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ Cloudflare Worker
+const baseDownload = "https://pwapp.genapp.workers.dev/";  // ✅ 主下载域名
+const secret = "mySuperSecretKey"; // 🔐 签名密钥（要和主下载Worker一致）
 let selectedVersion = null;
 
 // === 版本按钮点击事件 ===
@@ -141,6 +143,19 @@ document.querySelectorAll(".version-btn").forEach(btn => {
     document.getElementById("output").textContent = `✅ 已选择版本 ${selectedVersion}`;
   });
 });
+
+// === 签名函数 ===
+async function sign(text, key) {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 // === 生成短链接 ===
 document.getElementById("generate").addEventListener("click", async () => {
@@ -154,27 +169,21 @@ document.getElementById("generate").addEventListener("click", async () => {
   output.textContent = "⏳ 正在生成短链接，请稍候...";
 
   try {
-    let success = false;
-    let data;
+    // 🧾 生成签名 + 完整下载链接
+    const sig = await sign(`${uid}:${selectedVersion}`, secret);
+    const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
 
-    for (let i = 0; i < 5; i++) { // 🔁 最多尝试 5 次，防重复短链冲突
-      const res = await fetch(workerURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid, version: selectedVersion })
-      });
+    // 📨 发送请求到 Worker
+    const res = await fetch(workerURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ longURL, uid, version: selectedVersion })
+    });
 
-      data = await res.json();
-      if (data.shortURL) {
-        success = true;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 300)); // 每次间隔 0.3 秒
-    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
 
-    if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
-
-    output.innerHTML = `✅ <b>短链接生成成功：</b>\n<a href="${data.shortURL}" target="_blank" style="color:#fff;">${data.shortURL}</a>\n\n📄 标题：${data.title}`;
+    output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank">${data.shortURL}</a><br><br>📄 ${data.title}`;
     copyBtn.classList.remove("hidden");
 
     copyBtn.onclick = () => {
@@ -186,6 +195,5 @@ document.getElementById("generate").addEventListener("click", async () => {
     output.textContent = `❌ 生成失败：${err.message}`;
   }
 });
-</script>
-</body>
+  </script>
 </html>
