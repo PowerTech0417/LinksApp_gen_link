@@ -31,8 +31,11 @@
     font-size: 1.1em;
     transition: transform 0.15s ease, background 0.3s;
   }
+  button.zone.selected {
+    background: #00b0cc;
+    transform: scale(1.1);
+  }
   button.zone:hover {
-    transform: scale(1.05);
     background: #00b0cc;
   }
   input {
@@ -52,16 +55,17 @@
     word-wrap: break-word;
     white-space: pre-wrap;
   }
-  .hidden { display: none; }
-  .copy-btn {
+  .copy-btn, #generate {
     background: #0ff;
     color: #000;
     border: none;
     border-radius: 8px;
-    padding: 8px 14px;
+    padding: 10px 16px;
     cursor: pointer;
-    margin-top: 8px;
+    margin-top: 10px;
+    font-weight: bold;
   }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
@@ -74,6 +78,7 @@
   <input id="workerBaseUrl" type="hidden" value="https://shortenworld.com/" />
   <input id="secretKey" type="hidden" value="mySuperSecretKey" />
 
+  <h3>请选择下载版本：</h3>
   <div class="btn-zone">
     <button class="zone" data-zone="1">版本 1</button>
     <button class="zone" data-zone="2">版本 2</button>
@@ -82,10 +87,23 @@
     <button class="zone" data-zone="5">版本 5</button>
   </div>
 
-  <pre id="output">点击版本按钮生成下载链接</pre>
+  <button id="generate">⚙️ 生成专属链接</button>
+  <pre id="output">👉 先选择版本，然后点击“生成专属链接”</pre>
   <button class="copy-btn hidden" id="copyBtn">复制链接</button>
 
 <script>
+let selectedZone = null;
+
+// ✅ 点击版本按钮 → 只是选择，不生成链接
+document.querySelectorAll(".zone").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".zone").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+    selectedZone = btn.dataset.zone;
+    document.getElementById("output").textContent = `已选择：版本 ${selectedZone}`;
+  });
+});
+
 async function hmacSha256Hex(key, text) {
   const enc = new TextEncoder();
   const cryptoKey = await crypto.subtle.importKey(
@@ -97,28 +115,27 @@ async function hmacSha256Hex(key, text) {
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
-document.querySelectorAll(".zone").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const uid = document.getElementById("uid").value.trim();
-    const base = document.getElementById("workerBaseUrl").value.trim();
-    const secret = document.getElementById("secretKey").value.trim();
-    const zone = btn.dataset.zone;
-    const output = document.getElementById("output");
-    const copyBtn = document.getElementById("copyBtn");
+// ✅ 点击生成按钮 → 手动生成签名链接
+document.getElementById("generate").addEventListener("click", async () => {
+  const uid = document.getElementById("uid").value.trim();
+  const base = document.getElementById("workerBaseUrl").value.trim();
+  const secret = document.getElementById("secretKey").value.trim();
+  const output = document.getElementById("output");
+  const copyBtn = document.getElementById("copyBtn");
 
-    if (!uid) return alert("请输入 UID");
+  if (!uid) return alert("请输入 UID");
+  if (!selectedZone) return alert("请选择一个版本");
 
-    const sig = await hmacSha256Hex(secret, `${uid}:${zone}`);
-    const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${zone}&sig=${sig}`;
+  const sig = await hmacSha256Hex(secret, `${uid}:${selectedZone}`);
+  const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${selectedZone}&sig=${sig}`;
 
-    output.textContent = final;
-    copyBtn.classList.remove("hidden");
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(final);
-      copyBtn.textContent = "✅ 已复制";
-      setTimeout(() => copyBtn.textContent = "复制链接", 2000);
-    };
-  });
+  output.textContent = final;
+  copyBtn.classList.remove("hidden");
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(final);
+    copyBtn.textContent = "✅ 已复制";
+    setTimeout(() => copyBtn.textContent = "复制链接", 2000);
+  };
 });
 </script>
 </body>
