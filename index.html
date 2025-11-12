@@ -1,9 +1,9 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔐 智能短链接生成器</title>
+<title>🔗 智能短链接生成器</title>
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -12,47 +12,52 @@
     text-align: center;
     padding: 2em;
   }
+
   h1 {
     color: #00e0ff;
     margin-bottom: 1em;
   }
-  label {
-    display: block;
-    margin-top: 10px;
-  }
+
   input {
     width: 80%;
     max-width: 320px;
-    padding: 8px;
-    border-radius: 6px;
+    padding: 10px;
+    border-radius: 8px;
     border: none;
-    margin-top: 4px;
+    margin: 10px 0 20px;
+    font-size: 1em;
   }
-  .btn-zone {
-    display: flex;
-    flex-wrap: wrap;
+
+  .btn-versions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.8em;
     justify-content: center;
-    gap: 1em;
-    margin: 1.5em 0;
+    margin: 1.5em auto;
+    max-width: 480px;
   }
-  button.zone {
+
+  button.version-btn {
     background: #00e0ff;
     border: none;
     color: #000;
     font-weight: bold;
-    padding: 12px 22px;
+    padding: 14px;
     border-radius: 12px;
     cursor: pointer;
-    font-size: 1.1em;
-    transition: transform 0.15s ease, background 0.3s;
+    font-size: 1em;
+    transition: all 0.2s ease;
   }
-  button.zone.selected {
+
+  button.version-btn.selected {
     background: #00b0cc;
-    transform: scale(1.1);
+    transform: scale(1.12);
   }
-  button.zone:hover {
+
+  button.version-btn:hover {
     background: #00b0cc;
   }
+
   .btn-main {
     background: #0ff;
     color: #000;
@@ -62,10 +67,11 @@
     cursor: pointer;
     margin: 8px;
     font-weight: bold;
+    font-size: 1em;
   }
-  .hidden {
-    display: none;
-  }
+
+  .hidden { display: none; }
+
   pre {
     background: #000a1a;
     color: #00ffff;
@@ -80,51 +86,50 @@
 <body>
   <h1>🔗 智能短链接生成器</h1>
 
-  <label>UID（用户代号）</label>
+  <label>UID（用户代号）</label><br/>
   <input id="uid" type="text" placeholder="例如：user123" />
 
   <h3>请选择下载版本：</h3>
-  <div class="btn-zone">
-    <button class="zone" data-version="1">版本 1</button>
-    <button class="zone" data-version="2">版本 2</button>
-    <button class="zone" data-version="3">版本 3</button>
-    <button class="zone" data-version="4">版本 4</button>
-    <button class="zone" data-version="5">版本 5</button>
+  <div class="btn-versions" id="versionContainer">
+    <button class="version-btn" data-version="1">版本 1</button>
+    <button class="version-btn" data-version="2">版本 2</button>
+    <button class="version-btn" data-version="3">版本 3</button>
+    <button class="version-btn" data-version="4">版本 4</button>
+    <button class="version-btn" data-version="5">版本 5</button>
+    <button class="version-btn" data-version="6">版本 6</button>
+    <button class="version-btn" data-version="7">版本 7</button>
+    <button class="version-btn" data-version="8">版本 8</button>
+    <button class="version-btn" data-version="9">版本 9</button>
+    <button class="version-btn" data-version="10">版本 10</button>
   </div>
-
-  <label>下载地址（APK 或 文件链接）</label>
-  <input id="downloadUrl" type="url" placeholder="例如：https://example.com/app.apk" />
 
   <button id="generate" class="btn-main">⚙️ 生成短链接</button>
   <button id="copyBtn" class="btn-main hidden">📋 复制短链接</button>
 
-  <pre id="output">👉 输入 UID、选择版本、填入链接，然后点击“生成短链接”</pre>
+  <pre id="output">👉 输入 UID，选择版本，然后点击“生成短链接”</pre>
 
 <script>
-const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ 你的 Worker
-
+const workerURL = "https://cn.shortlink-931.workers.dev/"; // ✅ 你的 Cloudflare Worker 域名
 let selectedVersion = null;
 
-// === 版本选择 ===
-document.querySelectorAll(".zone").forEach(btn => {
+// === 版本按钮点击事件 ===
+document.querySelectorAll(".version-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".zone").forEach(b => b.classList.remove("selected"));
+    document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
     btn.classList.add("selected");
     selectedVersion = btn.dataset.version;
-    document.getElementById("output").textContent = `已选择：版本 ${selectedVersion}`;
+    document.getElementById("output").textContent = `✅ 已选择版本 ${selectedVersion}`;
   });
 });
 
 // === 生成短链接 ===
 document.getElementById("generate").addEventListener("click", async () => {
   const uid = document.getElementById("uid").value.trim();
-  const longURL = document.getElementById("downloadUrl").value.trim();
   const output = document.getElementById("output");
   const copyBtn = document.getElementById("copyBtn");
 
   if (!uid) return alert("请输入 UID");
-  if (!selectedVersion) return alert("请选择版本");
-  if (!longURL) return alert("请输入下载链接");
+  if (!selectedVersion) return alert("请选择一个版本");
 
   output.textContent = "⏳ 正在生成短链接，请稍候...";
 
@@ -132,22 +137,15 @@ document.getElementById("generate").addEventListener("click", async () => {
     const res = await fetch(workerURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        longURL,
-        uid,
-        version: selectedVersion
-      })
+      body: JSON.stringify({ uid, version: selectedVersion })
     });
 
     const data = await res.json();
-
     if (data.error) throw new Error(data.error);
-    if (!data.shortURL) throw new Error("未返回短链接");
 
-    output.textContent =
-      `✅ 生成成功：\n${data.shortURL}\n\n📄 标题：${data.title}`;
-
+    output.textContent = `✅ 短链接生成成功：\n${data.shortURL}\n\n📄 标题：${data.title}`;
     copyBtn.classList.remove("hidden");
+
     copyBtn.onclick = () => {
       navigator.clipboard.writeText(data.shortURL);
       copyBtn.textContent = "✅ 已复制";
