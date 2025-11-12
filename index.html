@@ -35,9 +35,7 @@
     background: #00b0cc;
     transform: scale(1.1);
   }
-  button.zone:hover {
-    background: #00b0cc;
-  }
+  button.zone:hover { background: #00b0cc; }
   input {
     width: 80%;
     max-width: 300px;
@@ -55,27 +53,28 @@
     word-wrap: break-word;
     white-space: pre-wrap;
   }
-  .copy-btn, #generate {
+  .btn-main {
     background: #0ff;
     color: #000;
     border: none;
     border-radius: 8px;
     padding: 10px 16px;
     cursor: pointer;
-    margin-top: 10px;
+    margin: 8px;
     font-weight: bold;
   }
   .hidden { display: none; }
 </style>
 </head>
 <body>
-  <h1>🔗 生成下载链接</h1>
+  <h1>🔗 下载链接生成器</h1>
 
   <label>UID（用户代号）</label><br>
   <input id="uid" type="text" placeholder="例如：user123" /><br>
 
   <!-- 隐藏 Worker 与 Secret -->
   <input id="workerBaseUrl" type="hidden" value="https://shortenworld.com/" />
+  <input id="shortAPI" type="hidden" value="https://shortenworld.com/api/shorten" />
   <input id="secretKey" type="hidden" value="mySuperSecretKey" />
 
   <h3>请选择下载版本：</h3>
@@ -87,14 +86,15 @@
     <button class="zone" data-zone="5">版本 5</button>
   </div>
 
-  <button id="generate">⚙️ 生成专属链接</button>
+  <button id="generate" class="btn-main">⚙️ 生成专属链接</button>
+  <button id="shorten" class="btn-main hidden">🔗 生成短链接</button>
   <pre id="output">👉 先选择版本，然后点击“生成专属链接”</pre>
-  <button class="copy-btn hidden" id="copyBtn">复制链接</button>
+  <button class="btn-main hidden" id="copyBtn">📋 复制链接</button>
 
 <script>
 let selectedZone = null;
 
-// ✅ 点击版本按钮 → 只是选择，不生成链接
+// === 选择版本 ===
 document.querySelectorAll(".zone").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".zone").forEach(b => b.classList.remove("selected"));
@@ -104,6 +104,7 @@ document.querySelectorAll(".zone").forEach(btn => {
   });
 });
 
+// === HMAC-SHA256 计算 ===
 async function hmacSha256Hex(key, text) {
   const enc = new TextEncoder();
   const cryptoKey = await crypto.subtle.importKey(
@@ -115,27 +116,65 @@ async function hmacSha256Hex(key, text) {
   return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
-// ✅ 点击生成按钮 → 手动生成签名链接
+// === 生成签名链接 ===
 document.getElementById("generate").addEventListener("click", async () => {
   const uid = document.getElementById("uid").value.trim();
   const base = document.getElementById("workerBaseUrl").value.trim();
   const secret = document.getElementById("secretKey").value.trim();
   const output = document.getElementById("output");
   const copyBtn = document.getElementById("copyBtn");
+  const shortenBtn = document.getElementById("shorten");
 
   if (!uid) return alert("请输入 UID");
   if (!selectedZone) return alert("请选择一个版本");
 
   const sig = await hmacSha256Hex(secret, `${uid}:${selectedZone}`);
-  const final = `${base}?uid=${encodeURIComponent(uid)}&zone=${selectedZone}&sig=${sig}`;
+  const longUrl = `${base}?uid=${encodeURIComponent(uid)}&zone=${selectedZone}&sig=${sig}`;
 
-  output.textContent = final;
+  output.textContent = longUrl;
   copyBtn.classList.remove("hidden");
+  shortenBtn.classList.remove("hidden");
+
   copyBtn.onclick = () => {
-    navigator.clipboard.writeText(final);
+    navigator.clipboard.writeText(longUrl);
     copyBtn.textContent = "✅ 已复制";
-    setTimeout(() => copyBtn.textContent = "复制链接", 2000);
+    setTimeout(() => copyBtn.textContent = "📋 复制链接", 2000);
   };
+
+  // 保存当前长链接用于短链生成
+  shortenBtn.dataset.url = longUrl;
+});
+
+// === 生成短链接 ===
+document.getElementById("shorten").addEventListener("click", async () => {
+  const shortenBtn = document.getElementById("shorten");
+  const api = document.getElementById("shortAPI").value.trim();
+  const longUrl = shortenBtn.dataset.url;
+  const output = document.getElementById("output");
+  const copyBtn = document.getElementById("copyBtn");
+
+  if (!longUrl) return alert("请先生成长链接！");
+
+  shortenBtn.textContent = "⏳ 生成中...";
+  try {
+    const res = await fetch(api, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ longURL: longUrl })
+    });
+    const data = await res.json();
+
+    if (!data.shortURL) throw new Error("短链生成失败");
+    output.textContent = data.shortURL;
+
+    navigator.clipboard.writeText(data.shortURL);
+    copyBtn.textContent = "✅ 已复制短链";
+    shortenBtn.textContent = "🔗 生成短链接";
+  } catch (e) {
+    shortenBtn.textContent = "❌ 生成失败";
+    output.textContent = "短链生成失败：" + e.message;
+    setTimeout(() => shortenBtn.textContent = "🔗 生成短链接", 2500);
+  }
 });
 </script>
 </body>
