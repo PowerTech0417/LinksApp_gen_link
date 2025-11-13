@@ -1,17 +1,17 @@
-<!DOCTYPE html>  
-<html lang="zh-CN">  
-<head>  
-<meta charset="UTF-8">  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">  
-<title>🔗 智能下载链接生成器</title>  
-<style>  
-  body {  
-    font-family: system-ui, sans-serif;  
-    background: radial-gradient(circle at top, #0a0f1c, #02040a);  
-    color: #eaf0ff;  
-    text-align: center;  
-    padding: 2em;  
-  }  
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔗 智能下载链接生成器</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: radial-gradient(circle at top, #0a0f1c, #02040a);
+    color: #eaf0ff;
+    text-align: center;
+    padding: 2em;
+  }
   h1 { color: #00e0ff; margin-bottom: 1em; }
 
   input {
@@ -44,12 +44,10 @@
     font-size: 1em;
     transition: all 0.2s ease;
   }
-
   button.version-btn.selected {
     background: #00b0cc;
     transform: scale(1.12);
   }
-
   button.version-btn:hover { background: #00b0cc; }
 
   .btn-main {
@@ -62,17 +60,13 @@
     font-size: 1em;
     transition: all 0.2s ease;
   }
-
   #generate { background: #ff3b3b; color: #fff; }
   #generate:hover { background: #ff6b6b; }
-
   #copyBtn { background: #00c8d7; color: #fff; }
   #copyBtn:hover { background: #4de3f1; }
 
-  .hidden { display: none; }
-
   pre {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255,255,255,0.08);
     color: #fff;
     padding: 14px;
     border-radius: 10px;
@@ -88,7 +82,7 @@
   a.short-link { color: #fff; text-decoration: underline; }
   a.short-link:hover { color: #00ffff; }
 
-  /* === 教程部分样式 === */
+  /* === 教程样式 === */
   .tutorial-section {
     background: rgba(255,255,255,0.05);
     border-radius: 12px;
@@ -100,7 +94,7 @@
     text-align: left;
   }
 
-  .tutorial-buttons button {
+  .lang-buttons button {
     background: #00e0ff;
     border: none;
     color: #000;
@@ -111,198 +105,200 @@
     font-weight: bold;
     transition: 0.2s;
   }
-
-  .tutorial-buttons button:hover { background: #00b0cc; }
+  .lang-buttons button:hover { background: #00b0cc; }
 
   #copyTutorial {
-    background: #ff8c00;
+    background: #ff3b3b;
     color: #fff;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 22px;
+    margin-top: 14px;
+    cursor: pointer;
+    transition: all 0.25s;
+    width: 100%;
   }
-
-  #copyTutorial:hover {
-    background: #ffaa33;
-  }
-</style>  
-</head>  
-<body>  
-  <h1>APP下载链接生成器</h1>  
+  #copyTutorial:hover { background: #ff6b6b; transform: scale(1.03); }
+</style>
+</head>
+<body>
+  <h1>APP下载链接生成器</h1>
   <label>UID（用户代号）</label><br/>
   <input id="uid" type="text" placeholder="例如：user123" />
 
-  <h3>请选择下载版本：</h3>  
-  <div class="btn-versions" id="versionContainer"></div>  
+  <h3>请选择下载版本：</h3>
+  <div class="btn-versions" id="versionContainer"></div>
 
   <button id="generate" class="btn-main">⚙️ 生成短链接</button>
   <button id="copyBtn" class="btn-main hidden">📋 复制短链接</button>
 
-  <pre id="output">👉 输入 UID，选择版本，然后点击“生成短链接”</pre>  
+  <pre id="output">👉 输入 UID，选择版本，然后点击“生成短链接”</pre>
 
-  <!-- 📘 教程区域 -->
+  <!-- 📘 教程 -->
   <div class="tutorial-section">
     <h2>📘 安装教程 / Installation Guide / Panduan Pemasangan</h2>
-    <p style="color:#00e0ff; font-weight:bold;">*提示：一个下载链接可以支持 3 个设备下载使用。</p>
-
-    <div class="tutorial-buttons">
-      <button onclick="showTutorial('mobile')">📱 手机版教程</button>
-      <button onclick="showTutorial('tv')">📺 TVBox 教程</button>
+    <div class="lang-buttons">
+      <button onclick="showTutorial('zh')">🇨🇳 中文</button>
+      <button onclick="showTutorial('en')">🇬🇧 English</button>
+      <button onclick="showTutorial('ms')">🇲🇾 Bahasa Melayu</button>
     </div>
 
     <div id="tutorialContent" style="margin-top:12px;"></div>
     <button id="copyTutorial" class="hidden">📋 复制教程内容</button>
   </div>
 
-  <script>  
-const workerURL = "https://cn.shortlink-931.workers.dev/";
-const baseDownload = "https://pwapp.genapp.workers.dev/";
-const secret = "mySuperSecretKey";
-const jsonURL = "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
-let selectedVersion = null;
-let generating = false;
+  <script>
+  const workerURL = "https://cn.shortlink-931.workers.dev/";
+  const baseDownload = "https://pwapp.genapp.workers.dev/";
+  const secret = "mySuperSecretKey";
+  const jsonURL = "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
+  let selectedVersion = null;
+  let generating = false;
 
-// === 从 JSON 动态载入版本按钮 ===  
-async function loadVersions() {
-  const container = document.getElementById("versionContainer");
-  try {
-    const res = await fetch(jsonURL);
-    const data = await res.json();
-    data.downloads.forEach(app => {
-      const btn = document.createElement("button");
-      btn.className = "version-btn";
-      btn.dataset.version = app.zone;
-      btn.textContent = app.name;
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        selectedVersion = app.zone;
-        document.getElementById("output").textContent = `✅ 已选择 ${app.name}`;
+  // === 载入版本按钮 ===
+  async function loadVersions() {
+    const container = document.getElementById("versionContainer");
+    try {
+      const res = await fetch(jsonURL);
+      const data = await res.json();
+      data.downloads.forEach(app => {
+        const btn = document.createElement("button");
+        btn.className = "version-btn";
+        btn.dataset.version = app.zone;
+        btn.textContent = app.name;
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedVersion = app.zone;
+          document.getElementById("output").textContent = `✅ 已选择 ${app.name}`;
+        });
+        container.appendChild(btn);
       });
-      container.appendChild(btn);
-    });
-  } catch (err) {
-    document.getElementById("output").textContent = `❌ 载入版本信息失败：${err.message}`;
-  }
-}
-loadVersions();
-
-// === 签名函数 ===  
-async function sign(text, key) {
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(key),
-    { name: "HMAC", hash: "SHA-256" },
-    false, ["sign"]
-  );
-  const sigBuffer = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// === 生成短链接 ===  
-document.getElementById("generate").addEventListener("click", async () => {
-  if (generating) return;
-  generating = true;
-
-  const uid = document.getElementById("uid").value.trim();
-  const output = document.getElementById("output");
-  const copyBtn = document.getElementById("copyBtn");
-
-  if (!uid) { alert("请输入 UID"); generating = false; return; }
-  if (!selectedVersion) { alert("请选择一个版本"); generating = false; return; }
-
-  output.textContent = "⏳ 正在生成短链接，请稍候...";
-
-  try {
-    const sig = await sign(`${uid}:${selectedVersion}`, secret);
-    const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
-    let data, success = false;
-
-    for (let i = 0; i < 5; i++) {
-      const res = await fetch(workerURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ longURL, uid, version: selectedVersion })
-      });
-      data = await res.json();
-      if (data.shortURL) { success = true; break; }
-      await new Promise(r => setTimeout(r, 300));
+    } catch (err) {
+      document.getElementById("output").textContent = `❌ 载入版本失败：${err.message}`;
     }
-
-    if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
-
-    output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a>`;
-    copyBtn.classList.remove("hidden");
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(data.shortURL);
-      copyBtn.textContent = "✅ 已复制";
-      setTimeout(() => (copyBtn.textContent = "📋 复制短链接"), 2000);
-    };
-    window.generatedShortURL = data.shortURL;
-  } catch (err) {
-    output.textContent = `❌ 生成失败：${err.message}`;
-  } finally {
-    generating = false;
   }
-});
+  loadVersions();
 
-// === 教程逻辑 ===
-function showTutorial(type) {
-  const tutorial = document.getElementById("tutorialContent");
-  const copyBtn = document.getElementById("copyTutorial");
-  const shortURL = window.generatedShortURL || "[请先生成短链接]";
-  const appName = document.querySelector(".version-btn.selected")?.textContent || "APP";
+  async function sign(text, key) {
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(key),
+      { name: "HMAC", hash: "SHA-256" },
+      false, ["sign"]
+    );
+    const sigBuffer = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
 
-  if (type === "mobile") {
-    tutorial.innerHTML = `
-      <h3>📱 ${appName} 手机版安装教程</h3>
-      <b>中文：</b><br>
+  // === 生成短链接 ===
+  document.getElementById("generate").addEventListener("click", async () => {
+    if (generating) return;
+    generating = true;
+
+    const uid = document.getElementById("uid").value.trim();
+    const output = document.getElementById("output");
+    const copyBtn = document.getElementById("copyBtn");
+
+    if (!uid) { alert("请输入 UID"); generating = false; return; }
+    if (!selectedVersion) { alert("请选择一个版本"); generating = false; return; }
+
+    output.textContent = "⏳ 正在生成短链接，请稍候...";
+
+    try {
+      const sig = await sign(`${uid}:${selectedVersion}`, secret);
+      const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
+      let data, success = false;
+
+      for (let i = 0; i < 5; i++) {
+        const res = await fetch(workerURL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ longURL, uid, version: selectedVersion })
+        });
+        data = await res.json();
+        if (data.shortURL) { success = true; break; }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
+
+      output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a>`;
+      copyBtn.classList.remove("hidden");
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(data.shortURL);
+        copyBtn.textContent = "✅ 已复制";
+        setTimeout(() => (copyBtn.textContent = "📋 复制短链接"), 2000);
+      };
+      window.generatedShortURL = data.shortURL;
+    } catch (err) {
+      output.textContent = `❌ 生成失败：${err.message}`;
+    } finally {
+      generating = false;
+    }
+  });
+
+  // === 教程内容（多语言） ===
+  function showTutorial(lang) {
+    const tutorial = document.getElementById("tutorialContent");
+    const copyBtn = document.getElementById("copyTutorial");
+    const shortURL = window.generatedShortURL || "[请先生成短链接]";
+    const appName = document.querySelector(".version-btn.selected")?.textContent || "APP";
+    let text = "";
+
+    if (lang === "zh") {
+      text = `
+      <h3>📱 手机版教程</h3>
       1️⃣ 点击“生成短链接”并复制链接。<br>
       2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
-      3️⃣ 将链接粘贴到地址栏并打开。<br>
-      4️⃣ 点击下载并安装 <b>${appName}</b>。<br><br>
+      3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
 
-      <b>English:</b><br>
-      1️⃣ Click "Generate Short Link" and copy it.<br>
-      2️⃣ Open <b>Google Chrome</b> browser.<br>
-      3️⃣ Paste the link in the address bar and open it.<br>
-      4️⃣ Download and install <b>${appName}</b>.<br><br>
-
-      <b>Bahasa Melayu:</b><br>
-      1️⃣ Klik “Generate Short Link” dan salin pautan tersebut.<br>
-      2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
-      3️⃣ Tampal pautan ke ruangan alamat dan buka.<br>
-      4️⃣ Muat turun dan pasang <b>${appName}</b>.<br><br>
-
-      🔗 下载链接 / Short Link / Pautan:<br>
-      <a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>
-    `;
-  } else {
-    tutorial.innerHTML = `
-      <h3>📺 ${appName} TVBox 教程</h3>
-      <b>中文：</b><br>
+      <h3>📺 TVBox 教程</h3>
       1️⃣ 打开 <b>Downloader (AFTV)</b> 应用。<br>
       2️⃣ 粘贴短链接并点击“Go”。<br>
       3️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
 
-      <b>English:</b><br>
+      💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
+      🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+    } else if (lang === "en") {
+      text = `
+      <h3>📱 Mobile Version</h3>
+      1️⃣ Click “Generate Short Link” and copy it.<br>
+      2️⃣ Open <b>Google Chrome</b> browser.<br>
+      3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
+
+      <h3>📺 TVBox Version</h3>
       1️⃣ Open <b>Downloader (AFTV)</b> app.<br>
       2️⃣ Paste the short link and press “Go”.<br>
       3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
 
-      <b>Bahasa Melayu:</b><br>
+      💡 Tip: One short link can be used on up to 3 devices.<br><br>
+      🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+    } else {
+      text = `
+      <h3>📱 Versi Mudah Alih</h3>
+      1️⃣ Klik “Generate Short Link” dan salin pautan.<br>
+      2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
+      3️⃣ Tampal pautan dan buka, muat turun serta pasang <b>${appName}</b>.<br><br>
+
+      <h3>📺 Versi TVBox</h3>
       1️⃣ Buka aplikasi <b>Downloader (AFTV)</b>.<br>
       2️⃣ Tampal pautan pendek dan tekan “Go”.<br>
-      3️⃣ Setelah selesai, pilih “Install” <b>${appName}</b>.<br><br>
+      3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
 
-      🔗 下载链接 / Short Link / Pautan:<br>
-      <a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>
-    `;
+      💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
+      🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+    }
+
+    tutorial.innerHTML = text;
+    copyBtn.classList.remove("hidden");
+    copyBtn.onclick = () => {
+      navigator.clipboard.writeText(tutorial.innerText);
+      copyBtn.textContent = "✅ 教程已复制";
+      setTimeout(() => (copyBtn.textContent = "📋 复制教程内容"), 2000);
+    };
   }
-
-  copyBtn.classList.remove("hidden");
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText(tutorial.innerText);
-    copyBtn.textContent = "✅ 教程已复制";
-    setTimeout(() => (copyBtn.textContent = "📋 复制教程内容"), 2000);
-  };
-}
-</script>  
-</body>  
+  </script>
+</body>
 </html>
