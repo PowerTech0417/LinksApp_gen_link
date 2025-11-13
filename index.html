@@ -81,7 +81,6 @@
   a.short-link { color: #fff; text-decoration: underline; }
   a.short-link:hover { color: #00ffff; }
 
-  /* === 教程区样式 === */
   .tutorial-section {
     background: rgba(255,255,255,0.05);
     border-radius: 12px;
@@ -93,10 +92,6 @@
     text-align: left;
   }
 
-  /* === 语言按钮样式（上层） === */
-  .lang-buttons {
-    margin-bottom: 1em;
-  }
   .lang-buttons button {
     background: #ffb84d;
     border: none;
@@ -109,16 +104,7 @@
     transition: 0.2s;
     box-shadow: 0 0 8px rgba(255, 184, 77, 0.4);
   }
-  .lang-buttons button:hover {
-    background: #ffcf70;
-    transform: scale(1.05);
-  }
 
-  /* === 教程类型按钮（下层） === */
-  .type-buttons {
-    margin-top: 0.8em;
-    margin-bottom: 0.8em;
-  }
   .type-buttons button {
     background: #00e0ff;
     border: none;
@@ -130,10 +116,6 @@
     font-weight: bold;
     transition: 0.2s;
     box-shadow: 0 0 8px rgba(0, 224, 255, 0.4);
-  }
-  .type-buttons button:hover {
-    background: #00b0cc;
-    transform: scale(1.05);
   }
 
   #copyTutorial {
@@ -165,7 +147,6 @@
 
   <pre id="output">👉 输入 UID，选择版本，然后点击“生成短链接”</pre>
 
-  <!-- 📘 教程 -->
   <div class="tutorial-section">
     <h2>📘 安装教程</h2>
     <div class="lang-buttons">
@@ -173,13 +154,11 @@
       <button onclick="setLanguage('en')">🇬🇧 English</button>
       <button onclick="setLanguage('ms')">🇲🇾 Bahasa Melayu</button>
     </div>
-
     <div class="type-buttons">
       <button onclick="showTutorial('mobile')">📱 手机</button>
       <button onclick="showTutorial('tvbox')">📺 TV Box</button>
       <button onclick="showTutorial('androidtv')">📺 Android TV</button>
     </div>
-
     <div id="tutorialContent" style="margin-top:12px;"></div>
     <button id="copyTutorial" class="hidden">📋 复制教程内容</button>
   </div>
@@ -266,8 +245,6 @@
     const appName = document.querySelector(".version-btn.selected")?.textContent || "APP";
     const tutorial = document.getElementById("tutorialContent");
     const copyBtn = document.getElementById("copyTutorial");
-    let text = "";
-
     const baseText = {
       zh: {
         mobile: `<h3>📱 手机/平板版 安装教程</h3>
@@ -276,86 +253,43 @@
         3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
         💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
         ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
-        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`,
         tvbox: `<h3>📺 TV Box / 投影机 安装教程</h3>
         1️⃣ 点击“下载链接”并复制链接。<br>
         2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
         3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
         💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
         ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
-        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`,
         androidtv: `<h3>📺 Android TV / Google TV 安装教程</h3>
-        1️⃣ 打开 <b>Downloader (AFTV)</b> 应用。<br>
-        2️⃣ 粘贴短链接并点击“Go”。<br>
-        3️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
+        1️⃣ 打开 <b>Google Play 商店</b>，搜索并安装 <b>Downloader (AFTV)</b> 应用。<br>
+        2️⃣ 打开 <b>Downloader (AFTV)</b>，粘贴短链接并点击 “Go”。<br>
+        3️⃣ 下载完成后选择 “安装” <b>${appName}</b>。<br><br>
         💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
         ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
-        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       },
-
       en: {
-        mobile: `<h3>📱 Mobile / Tablet Installation</h3>
-        1️⃣ Click “Download Link” and copy it.<br>
-        2️⃣ Open <b>Google Chrome</b> browser.<br>
-        3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
-        💡 Tip: Each link supports up to <b>3 devices</b>. After 3 uses, the link becomes invalid.<br>
-        ⚠️ Please use the corresponding device to open the link. Do not open it on other devices!<br><br>
-        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
-        tvbox: `<h3>📺 TV Box / Projector Installation</h3>
-        1️⃣ Click “Download Link” and copy it.<br>
-        2️⃣ Open <b>Google Chrome</b> browser.<br>
-        3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
-        💡 Tip: Each link supports up to <b>3 devices</b>. After 3 uses, the link becomes invalid.<br>
-        ⚠️ Please use the corresponding device to open the link. Do not open it on other devices!<br><br>
-        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
         androidtv: `<h3>📺 Android TV / Google TV Installation</h3>
-        1️⃣ Open <b>Downloader (AFTV)</b> app.<br>
-        2️⃣ Paste the short link and click “Go”.<br>
-        3️⃣ Once downloaded, choose “Install” <b>${appName}</b>.<br><br>
+        1️⃣ Open <b>Google Play Store</b> and install <b>Downloader (AFTV)</b>.<br>
+        2️⃣ Open the <b>Downloader (AFTV)</b> app, paste the short link and click “Go”.<br>
+        3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
         💡 Tip: Each link supports up to <b>3 devices</b>. After 3 uses, the link becomes invalid.<br>
-        ⚠️ Please use the corresponding device to open the link. Do not open it on other devices!<br><br>
-        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
+        ⚠️ Please use the corresponding device to open the link. Do not use other devices!<br><br>
+        🔗 Link:<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       },
-
       ms: {
-        mobile: `<h3>📱 Versi Telefon / Tablet</h3>
-        1️⃣ Klik “Pautan Muat Turun” dan salin pautan.<br>
-        2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
-        3️⃣ Tampal pautan, buka dan pasang <b>${appName}</b>.<br><br>
-        💡 Nota: Setiap pautan boleh digunakan pada <b>3 peranti maksimum</b>. Selepas <b>3 kali</b> digunakan, pautan akan tamat tempoh.<br>
-        ⚠️ Sila gunakan peranti yang sepadan untuk membuka pautan ini. Jangan guna peranti lain!<br><br>
-        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
-        tvbox: `<h3>📺 Versi TV Box / Projektor</h3>
-        1️⃣ Klik “Pautan Muat Turun” dan salin pautan.<br>
-        2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
-        3️⃣ Tampal pautan, buka dan pasang <b>${appName}</b>.<br><br>
-        💡 Nota: Setiap pautan boleh digunakan pada <b>3 peranti maksimum</b>. Selepas <b>3 kali</b> digunakan, pautan akan tamat tempoh.<br>
-        ⚠️ Sila gunakan peranti yang sepadan untuk membuka pautan ini. Jangan guna peranti lain!<br><br>
-        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
-
         androidtv: `<h3>📺 Versi Android TV / Google TV</h3>
-        1️⃣ Buka aplikasi <b>Downloader (AFTV)</b>.<br>
-        2️⃣ Tampal pautan pendek dan tekan “Go”.<br>
+        1️⃣ Buka <b>Kedai Google Play</b> dan pasang aplikasi <b>Downloader (AFTV)</b>.<br>
+        2️⃣ Buka <b>Downloader (AFTV)</b>, tampal pautan pendek dan tekan “Go”.<br>
         3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
-        💡 Nota: Setiap pautan boleh digunakan pada <b>3 peranti maksimum</b>. Selepas <b>3 kali</b> digunakan, pautan akan tamat tempoh.<br>
+        💡 Nota: Setiap pautan boleh digunakan pada <b>3 peranti maksimum</b>. Selepas 3 kali digunakan, pautan akan tamat tempoh.<br>
         ⚠️ Sila gunakan peranti yang sepadan untuk membuka pautan ini. Jangan guna peranti lain!<br><br>
-        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
+        🔗 Pautan:<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       }
     };
-
-    text = baseText[currentLang][type];
-    tutorial.innerHTML = text;
+    tutorial.innerHTML = baseText[currentLang][type];
     copyBtn.classList.remove("hidden");
-    copyBtn.onclick = () => {
-      navigator.clipboard.writeText(tutorial.innerText);
-      copyBtn.textContent = "✅ 教程已复制";
-      setTimeout(() => (copyBtn.textContent = "📋 复制教程内容"), 2000);
-    };
   }
 </script>
 </body>
