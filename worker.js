@@ -41,7 +41,7 @@ export default {
       let attempt = 0;
 
       for (attempt = 1; attempt <= 5; attempt++) {
-        const id = "id" + Math.floor(1000 + Math.random() * 90000);
+        const id = version; // 🧩 这里用版本号生成短链路径
 
         // 👇 用 /dl/ 路径生成真正短链（隐藏原始URL）
         const hiddenRedirect = `https://${url.hostname}/dl/${id}`;
@@ -55,7 +55,7 @@ export default {
           body: JSON.stringify({
             domain: SHORTIO_DOMAIN,
             originalURL: hiddenRedirect,
-            path: id,
+            path: `id${Math.floor(10000 + Math.random() * 90000)}`,
             title,
           }),
         });
@@ -108,32 +108,26 @@ export default {
 // === 🔒 下载隐藏逻辑 ===
 async function handleDownload(id) {
   try {
-    // 获取 JSON 文件
     const jsonURL =
       "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
     const res = await fetch(jsonURL);
-    const data = await res.json();
+    const listData = await res.json();
 
-    // 支持数组或对象
-    const apps = Array.isArray(data) ? data : data.apps || [];
+    const apps = listData.downloads || listData.apps || [];
+    const app = apps.find(x => String(x.zone) === String(id));
 
-    if (!Array.isArray(apps)) {
-      throw new Error("Invalid downloads.json format (must be array or {apps:[]})");
-    }
-
-    // 查找对应 APP
-    const app = apps.find((x) => x.id === id || x.path === id);
     if (!app) {
       return new Response("Not Found", { status: 404 });
     }
 
     // 下载文件（隐藏真实源）
     const fileRes = await fetch(app.url);
-    const headers = new Headers(fileRes.headers);
 
-    // 👇 自动根据 JSON 的 name 设置文件名
-    const cleanName = (app.name || "App").replace(/[^\w\u4e00-\u9fa5.-]/g, "_");
-    headers.set("Content-Disposition", `attachment; filename="${cleanName}.apk"`);
+    const headers = new Headers(fileRes.headers);
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename="${app.name || "App"}.apk"`
+    );
     headers.set("Cache-Control", "no-store");
 
     return new Response(fileRes.body, { status: 200, headers });
