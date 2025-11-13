@@ -2,4 +2,10 @@
   "name": "shortlink",
   "main": "worker.js",
   "compatibility_date": "2025-11-08",
+    "kv_namespaces": [
+    {
+      "binding": "DOWNLOAD_MAP",
+      "id": "80b2c18e6bbb40cab3a7310163fa3b9c"
+    }
+  ]
 }
