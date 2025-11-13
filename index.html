@@ -223,50 +223,50 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ longURL, uid, version: selectedVersion })
       });
-      const data = await res.json();
-      if (!data.shortURL) throw new Error(data.error || "无法生成短链接，请稍后重试。");
-      output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a>`;
-      copyBtn.classList.remove("hidden");
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(data.shortURL);
-        copyBtn.textContent = "✅ 已复制";
-        setTimeout(() => (copyBtn.textContent = "📋 复制短链接"), 2000);
-      };
-      window.generatedShortURL = data.shortURL;
-      showTutorial("mobile"); // ✅ 自动显示教程
-    } catch (err) {
-      output.textContent = `❌ 生成失败：${err.message}`;
-    } finally {
-      generating = false;
-    }
-  });
-
-  function setLanguage(lang) { currentLang = lang; showTutorial('mobile'); }
-
-  function showTutorial(type) {
-    const shortURL = window.generatedShortURL || "[请先生成短链接]";
-    const appName = document.querySelector(".version-btn.selected")?.textContent || "APP";
-    const tutorial = document.getElementById("tutorialContent");
-    const copyBtn = document.getElementById("copyTutorial");
-
-    const texts = {
+      const baseText = {
       zh: {
-        mobile: `📱 手机版教程<br>1️⃣ 点击“下载链接”复制链接<br>2️⃣ 打开 <b>Google Chrome</b> 浏览器<br>3️⃣ 粘贴链接后打开并安装 <b>${appName}</b><br><br>💡 提示：同一链接最多支持 3 台设备，超过 3 次将自动失效。`,
-        tvbox: `📺 TV Box 安装教程<br>1️⃣ 复制短链接<br>2️⃣ 在 <b>Google Chrome</b> 打开<br>3️⃣ 下载并安装 <b>${appName}</b><br><br>💡 提示：同一链接最多支持 3 台设备，超过 3 次将自动失效。`,
-        androidtv: `📺 Android TV / Google TV 安装教程<br>1️⃣ 打开 <b>Google Play 商店</b> 安装 <b>Downloader (AFTV)</b><br>2️⃣ 打开 Downloader，粘贴短链接并点击“Go”<br>3️⃣ 下载完成后选择“安装” <b>${appName}</b><br><br>💡 提示：同一链接最多支持 3 台设备，超过 3 次将自动失效。`
+        mobile: `<h3>📱 手机/平板版 安装教程</h3>
+        1️⃣ 点击“下载链接”并复制链接。<br>
+        2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
+        3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
+        ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`,
+        tvbox: `<h3>📺 TV Box / 投影仪 安装教程</h3>
+        1️⃣ 点击“下载链接”并复制链接。<br>
+        2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
+        3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
+        ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`,
+        androidtv: `<h3>📺 Android TV / Google TV 安装教程</h3>
+        1️⃣ 打开 <b>Google Play 商店</b>，搜索并安装 <b>Downloader (AFTV)</b> 应用。<br>
+        2️⃣ 打开 <b>Downloader (AFTV)</b>，粘贴短链接并点击 “Go”。<br>
+        3️⃣ 下载完成后选择 “安装” <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>
+        ⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       },
       en: {
-        mobile: `📱 Mobile Installation<br>1️⃣ Copy the link<br>2️⃣ Open <b>Google Chrome</b><br>3️⃣ Paste and open the link to install <b>${appName}</b><br><br>💡 Each link supports up to 3 devices.`,
-        tvbox: `📺 TV Box Installation<br>1️⃣ Copy link<br>2️⃣ Open in <b>Google Chrome</b><br>3️⃣ Download and install <b>${appName}</b><br><br>💡 Each link supports up to 3 devices.`,
-        androidtv: `📺 Android TV / Google TV Installation<br>1️⃣ Open <b>Google Play Store</b> and install <b>Downloader (AFTV)</b><br>2️⃣ Open Downloader, paste short link and click “Go”<br>3️⃣ Once downloaded, choose “Install” <b>${appName}</b><br><br>💡 Each link supports up to 3 devices.`
+        androidtv: `<h3>📺 Android TV / Google TV Installation</h3>
+        1️⃣ Open <b>Google Play Store</b> and install <b>Downloader (AFTV)</b>.<br>
+        2️⃣ Open the <b>Downloader (AFTV)</b> app, paste the short link and click “Go”.<br>
+        3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
+        💡 Tip: Each link supports up to <b>3 devices</b>. After 3 uses, the link becomes invalid.<br>
+        ⚠️ Please use the corresponding device to open the link. Do not use other devices!<br><br>
+        🔗 Link:<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       },
       ms: {
-        mobile: `📱 Versi Telefon<br>1️⃣ Salin pautan muat turun<br>2️⃣ Buka <b>Google Chrome</b><br>3️⃣ Tampal pautan dan pasang <b>${appName}</b><br><br>💡 Setiap pautan boleh digunakan pada 3 peranti maksimum.`,
-        tvbox: `📺 Versi TV Box<br>1️⃣ Salin pautan<br>2️⃣ Buka dalam <b>Google Chrome</b><br>3️⃣ Muat turun dan pasang <b>${appName}</b><br><br>💡 Pautan sah untuk 3 peranti maksimum.`,
-        androidtv: `📺 Versi Android TV / Google TV<br>1️⃣ Buka <b>Kedai Google Play</b> dan pasang <b>Downloader (AFTV)</b><br>2️⃣ Buka Downloader, tampal pautan pendek dan tekan “Go”<br>3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b><br><br>💡 Setiap pautan sah untuk 3 peranti maksimum.`
+        androidtv: `<h3>📺 Versi Android TV / Google TV</h3>
+        1️⃣ Buka <b>Kedai Google Play</b> dan pasang aplikasi <b>Downloader (AFTV)</b>.<br>
+        2️⃣ Buka <b>Downloader (AFTV)</b>, tampal pautan pendek dan tekan “Go”.<br>
+        3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
+        💡 Nota: Setiap pautan boleh digunakan pada <b>3 peranti maksimum</b>. Selepas 3 kali digunakan, pautan akan tamat tempoh.<br>
+        ⚠️ Sila gunakan peranti yang sepadan untuk membuka pautan ini. Jangan guna peranti lain!<br><br>
+        🔗 Pautan:<br><a href="${shortURL}" target="_blank">${shortURL}</a>`
       }
     };
-
+      
     tutorial.innerHTML = texts[currentLang][type] + `<br><br>🔗 链接：<a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
     copyBtn.classList.remove("hidden");
     copyBtn.onclick = () => {
