@@ -384,14 +384,6 @@ function showTutorial(type) {
     setTimeout(() => (copyBtn.textContent = "📋 复制教程内容"), 2000);
   };
   }
-
-  copyBtn.classList.remove("hidden");
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText(tutorial.innerText);
-    copyBtn.textContent = "✅ 教程已复制";
-    setTimeout(() => (copyBtn.textContent = "📋 复制教程内容"), 2000);
-  };
-}
 </script>
 </body>
 </html>
