@@ -41,7 +41,7 @@ export default {
       let attempt = 0;
 
       for (attempt = 1; attempt <= 5; attempt++) {
-        const id = Math.floor(1 + Math.random() * 10); // 用 zone 对应编号
+        const id = Math.floor(1 + Math.random() * 10); // 随机选 zone
         const hiddenRedirect = `https://${url.hostname}/dl/${id}`;
 
         const response = await fetch("https://api.short.io/links", {
@@ -108,10 +108,15 @@ async function handleDownload(zone) {
   try {
     const jsonURL =
       "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
-    const res = await fetch(jsonURL);
-    const apps = await res.json();
 
-    const app = apps.find((x) => x.zone === zone);
+    const res = await fetch(jsonURL);
+    const data = await res.json();
+
+    if (!data.downloads || !Array.isArray(data.downloads)) {
+      throw new Error("JSON 格式错误：缺少 downloads 数组");
+    }
+
+    const app = data.downloads.find((x) => x.zone === zone);
     if (!app) {
       return new Response("Not Found", { status: 404 });
     }
