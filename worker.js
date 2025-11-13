@@ -4,8 +4,8 @@ export default {
 
     // === 📥 下载中转 ===
     if (url.pathname.startsWith("/dl/")) {
-      const zone = parseInt(url.pathname.split("/dl/")[1]);
-      return handleDownload(zone);
+      const id = url.pathname.split("/dl/")[1];
+      return handleDownload(id);
     }
 
     // === ✅ 处理 CORS ===
@@ -41,7 +41,9 @@ export default {
       let attempt = 0;
 
       for (attempt = 1; attempt <= 5; attempt++) {
-        const id = Math.floor(1 + Math.random() * 10); // 随机选 zone
+        const id = "id" + Math.floor(1000 + Math.random() * 90000);
+
+        // 👇 用 /dl/ 路径生成真正短链（隐藏原始URL）
         const hiddenRedirect = `https://${url.hostname}/dl/${id}`;
 
         const response = await fetch("https://api.short.io/links", {
@@ -53,7 +55,7 @@ export default {
           body: JSON.stringify({
             domain: SHORTIO_DOMAIN,
             originalURL: hiddenRedirect,
-            path: "v" + id + "-" + Math.floor(1000 + Math.random() * 90000),
+            path: id,
             title,
           }),
         });
@@ -67,7 +69,7 @@ export default {
         }
 
         if (response.ok && data.shortURL) {
-          shortData = data;
+          shortData = { ...data, id };
           break;
         }
 
@@ -83,13 +85,13 @@ export default {
         return Response.redirect(shortData.shortURL, 302);
       }
 
-      // === 默认返回 JSON ===
+      // === 返回 JSON ===
       return new Response(
         JSON.stringify({
           shortURL: shortData.shortURL,
           title,
           attempts: attempt,
-          id: shortData.idString || shortData.path,
+          id: shortData.id,
           createdAt: new Date().toISOString(),
         }),
         { status: 200, headers: corsHeaders() }
@@ -104,31 +106,34 @@ export default {
 };
 
 // === 🔒 下载隐藏逻辑 ===
-async function handleDownload(zone) {
+async function handleDownload(id) {
   try {
+    // 获取 JSON 文件
     const jsonURL =
       "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
-
     const res = await fetch(jsonURL);
     const data = await res.json();
 
-    if (!data.downloads || !Array.isArray(data.downloads)) {
-      throw new Error("JSON 格式错误：缺少 downloads 数组");
+    // 支持数组或对象
+    const apps = Array.isArray(data) ? data : data.apps || [];
+
+    if (!Array.isArray(apps)) {
+      throw new Error("Invalid downloads.json format (must be array or {apps:[]})");
     }
 
-    const app = data.downloads.find((x) => x.zone === zone);
+    // 查找对应 APP
+    const app = apps.find((x) => x.id === id || x.path === id);
     if (!app) {
       return new Response("Not Found", { status: 404 });
     }
 
-    // 下载源
+    // 下载文件（隐藏真实源）
     const fileRes = await fetch(app.url);
-
     const headers = new Headers(fileRes.headers);
-    headers.set(
-      "Content-Disposition",
-      `attachment; filename="${app.name || "App"}.apk"`
-    );
+
+    // 👇 自动根据 JSON 的 name 设置文件名
+    const cleanName = (app.name || "App").replace(/[^\w\u4e00-\u9fa5.-]/g, "_");
+    headers.set("Content-Disposition", `attachment; filename="${cleanName}.apk"`);
     headers.set("Cache-Control", "no-store");
 
     return new Response(fileRes.body, { status: 200, headers });
