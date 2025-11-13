@@ -1,14 +1,6 @@
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    // === 📥 下载中转 ===
-    if (url.pathname.startsWith("/dl/")) {
-      const id = url.pathname.split("/dl/")[1];
-      return handleDownload(id);
-    }
-
-    // === ✅ 处理 CORS ===
+    // ✅ 处理 CORS
     if (request.method === "OPTIONS") {
       return new Response("", { headers: corsHeaders() });
     }
@@ -41,10 +33,7 @@ export default {
       let attempt = 0;
 
       for (attempt = 1; attempt <= 5; attempt++) {
-        const id = version; // 🧩 这里用版本号生成短链路径
-
-        // 👇 用 /dl/ 路径生成真正短链（隐藏原始URL）
-        const hiddenRedirect = `https://${url.hostname}/dl/${id}`;
+        const id = "" + Math.floor(1000 + Math.random() * 90000);
 
         const response = await fetch("https://api.short.io/links", {
           method: "POST",
@@ -54,8 +43,8 @@ export default {
           },
           body: JSON.stringify({
             domain: SHORTIO_DOMAIN,
-            originalURL: hiddenRedirect,
-            path: `id${Math.floor(10000 + Math.random() * 90000)}`,
+            originalURL: longURL,
+            path: id,
             title,
           }),
         });
@@ -69,13 +58,12 @@ export default {
         }
 
         if (response.ok && data.shortURL) {
-          shortData = { ...data, id };
+          shortData = data;
           break;
         }
 
         if (data.error && data.error.includes("already exists")) continue;
-        if (attempt === 5)
-          throw new Error(data.error || "短链接生成失败，请稍后重试。");
+        if (attempt === 5) throw new Error(data.error || "短链接生成失败，请稍后重试。");
       }
 
       if (!shortData) throw new Error("生成短链接失败（超过最大重试次数）");
@@ -85,17 +73,18 @@ export default {
         return Response.redirect(shortData.shortURL, 302);
       }
 
-      // === 返回 JSON ===
+      // === 默认返回 JSON ===
       return new Response(
         JSON.stringify({
           shortURL: shortData.shortURL,
           title,
           attempts: attempt,
-          id: shortData.id,
+          id: shortData.idString || shortData.path,
           createdAt: new Date().toISOString(),
         }),
         { status: 200, headers: corsHeaders() }
       );
+
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
@@ -104,37 +93,6 @@ export default {
     }
   },
 };
-
-// === 🔒 下载隐藏逻辑 ===
-async function handleDownload(id) {
-  try {
-    const jsonURL =
-      "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
-    const res = await fetch(jsonURL);
-    const listData = await res.json();
-
-    const apps = listData.downloads || listData.apps || [];
-    const app = apps.find(x => String(x.zone) === String(id));
-
-    if (!app) {
-      return new Response("Not Found", { status: 404 });
-    }
-
-    // 下载文件（隐藏真实源）
-    const fileRes = await fetch(app.url);
-
-    const headers = new Headers(fileRes.headers);
-    headers.set(
-      "Content-Disposition",
-      `attachment; filename="${app.name || "App"}.apk"`
-    );
-    headers.set("Cache-Control", "no-store");
-
-    return new Response(fileRes.body, { status: 200, headers });
-  } catch (err) {
-    return new Response("Download error: " + err.message, { status: 500 });
-  }
-}
 
 // === 🌐 CORS 支持 ===
 function corsHeaders() {
