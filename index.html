@@ -48,7 +48,6 @@
     background: #00b0cc;
     transform: scale(1.12);
   }
-  button.version-btn:hover { background: #00b0cc; }
 
   .btn-main {
     border: none;
@@ -82,7 +81,7 @@
   a.short-link { color: #fff; text-decoration: underline; }
   a.short-link:hover { color: #00ffff; }
 
-  /* === 教程样式 === */
+  /* === 教程区样式 === */
   .tutorial-section {
     background: rgba(255,255,255,0.05);
     border-radius: 12px;
@@ -94,12 +93,7 @@
     text-align: left;
   }
 
-  .tutorial-buttons, .lang-buttons {
-    text-align: center;
-    margin-bottom: 10px;
-  }
-
-  .tutorial-buttons button, .lang-buttons button {
+  .lang-buttons button, .type-buttons button {
     background: #00e0ff;
     border: none;
     color: #000;
@@ -110,7 +104,8 @@
     font-weight: bold;
     transition: 0.2s;
   }
-  .tutorial-buttons button:hover, .lang-buttons button:hover { background: #00b0cc; }
+  .lang-buttons button:hover,
+  .type-buttons button:hover { background: #00b0cc; }
 
   #copyTutorial {
     background: #ff3b3b;
@@ -144,16 +139,16 @@
   <!-- 📘 教程 -->
   <div class="tutorial-section">
     <h2>📘 安装教程 / Installation Guide / Panduan Pemasangan</h2>
-
-    <div class="tutorial-buttons">
-      <button onclick="setTutorialType('mobile')">📱 手机版教程</button>
-      <button onclick="setTutorialType('tvbox')">📺 TVBox 教程</button>
+    <div class="lang-buttons">
+      <button onclick="setLanguage('zh')">🇨🇳 中文</button>
+      <button onclick="setLanguage('en')">🇬🇧 English</button>
+      <button onclick="setLanguage('ms')">🇲🇾 Bahasa Melayu</button>
     </div>
 
-    <div class="lang-buttons">
-      <button onclick="showTutorial('zh')">🇨🇳 中文</button>
-      <button onclick="showTutorial('en')">🇬🇧 English</button>
-      <button onclick="showTutorial('ms')">🇲🇾 Bahasa Melayu</button>
+    <div class="type-buttons">
+      <button onclick="showTutorial('mobile')">📱 手机 / 平板版</button>
+      <button onclick="showTutorial('tvbox')">📺 TV Box / 投影版</button>
+      <button onclick="showTutorial('androidtv')">📺 Android TV / Google TV</button>
     </div>
 
     <div id="tutorialContent" style="margin-top:12px;"></div>
@@ -167,29 +162,25 @@
   const jsonURL = "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
   let selectedVersion = null;
   let generating = false;
-  let tutorialType = "mobile"; // 默认手机版
+  let currentLang = "zh";
 
   async function loadVersions() {
     const container = document.getElementById("versionContainer");
-    try {
-      const res = await fetch(jsonURL);
-      const data = await res.json();
-      data.downloads.forEach(app => {
-        const btn = document.createElement("button");
-        btn.className = "version-btn";
-        btn.dataset.version = app.zone;
-        btn.textContent = app.name;
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          selectedVersion = app.zone;
-          document.getElementById("output").textContent = `✅ 已选择 ${app.name}`;
-        });
-        container.appendChild(btn);
+    const res = await fetch(jsonURL);
+    const data = await res.json();
+    data.downloads.forEach(app => {
+      const btn = document.createElement("button");
+      btn.className = "version-btn";
+      btn.dataset.version = app.zone;
+      btn.textContent = app.name;
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".version-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedVersion = app.zone;
+        document.getElementById("output").textContent = `✅ 已选择 ${app.name}`;
       });
-    } catch (err) {
-      document.getElementById("output").textContent = `❌ 载入版本失败：${err.message}`;
-    }
+      container.appendChild(btn);
+    });
   }
   loadVersions();
 
@@ -211,22 +202,19 @@
     const copyBtn = document.getElementById("copyBtn");
     if (!uid) { alert("请输入 UID"); generating = false; return; }
     if (!selectedVersion) { alert("请选择一个版本"); generating = false; return; }
+
     output.textContent = "⏳ 正在生成短链接，请稍候...";
+
     try {
       const sig = await sign(`${uid}:${selectedVersion}`, secret);
       const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
-      let data, success = false;
-      for (let i = 0; i < 5; i++) {
-        const res = await fetch(workerURL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ longURL, uid, version: selectedVersion })
-        });
-        data = await res.json();
-        if (data.shortURL) { success = true; break; }
-        await new Promise(r => setTimeout(r, 300));
-      }
-      if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
+      const res = await fetch(workerURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ longURL, uid, version: selectedVersion })
+      });
+      const data = await res.json();
+      if (!data.shortURL) throw new Error(data.error || "无法生成短链接，请稍后重试。");
       output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a>`;
       copyBtn.classList.remove("hidden");
       copyBtn.onclick = () => {
@@ -242,74 +230,79 @@
     }
   });
 
-  function setTutorialType(type) {
-    tutorialType = type;
-    document.getElementById("tutorialContent").innerHTML = "👉 请选择语言以查看教程";
-  }
+  function setLanguage(lang) { currentLang = lang; showTutorial('mobile'); }
 
-  function showTutorial(lang) {
-    const tutorial = document.getElementById("tutorialContent");
-    const copyBtn = document.getElementById("copyTutorial");
+  function showTutorial(type) {
     const shortURL = window.generatedShortURL || "[请先生成短链接]";
     const appName = document.querySelector(".version-btn.selected")?.textContent || "APP";
+    const tutorial = document.getElementById("tutorialContent");
+    const copyBtn = document.getElementById("copyTutorial");
     let text = "";
 
-    if (lang === "zh") {
-      if (tutorialType === "mobile") {
-        text = `
-        <h3>📱 手机/平板版安装教程</h3>
+    const baseText = {
+      zh: {
+        mobile: `<h3>📱 手机/平板版 安装教程</h3>
         1️⃣ 点击“下载链接”并复制链接。<br>
         2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
         3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
         💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
-        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
-      } else {
-        text = `
-        <h3>📺 TV Box / PProjector 安装教程</h3>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        tvbox: `<h3>📱 TV Box / 投影机 安装教程</h3>
+        1️⃣ 点击“下载链接”并复制链接。<br>
+        2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
+        3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        androidtv: `<h3>📺 Android TV / Google TV 安装教程</h3>
         1️⃣ 打开 <b>Downloader (AFTV)</b> 应用。<br>
         2️⃣ 粘贴短链接并点击“Go”。<br>
         3️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
         💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
-        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
-      }
-    } else if (lang === "en") {
-      if (tutorialType === "mobile") {
-        text = `
-        <h3>📱 Mobile Version Guide</h3>
-        1️⃣ Click “Generate Short Link” and copy it.<br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
+      },
+      en: {
+        mobile: `<h3>📱 Mobile / Tablet Installation</h3>
+        1️⃣ Click “Download Link” and copy it.<br>
         2️⃣ Open <b>Google Chrome</b> browser.<br>
         3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
-        💡 Tip: One short link can be used on up to 3 devices.<br><br>
-        🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
-      } else {
-        text = `
-        <h3>📺 TVBox Guide</h3>
+        💡 Tip: Each link supports up to 3 devices.<br><br>
+        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        tvbox: `<h3>📺 TV Box / Projector Installation</h3>
+        1️⃣ Click “Download Link” and copy it.<br>
+        2️⃣ Open <b>Google Chrome</b> browser.<br>
+        3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
+        💡 Tip: Each link supports up to 3 devices.<br><br>
+        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        androidtv: `<h3>📺 Android TV / Google TV Installation</h3>
         1️⃣ Open <b>Downloader (AFTV)</b> app.<br>
-        2️⃣ Paste the short link and press “Go”.<br>
-        3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
-        💡 Tip: One short link can be used on up to 3 devices.<br><br>
-        🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
-      }
-    } else {
-      if (tutorialType === "mobile") {
-        text = `
-        <h3>📱 Versi Mudah Alih</h3>
-        1️⃣ Klik “Generate Short Link” dan salin pautan.<br>
+        2️⃣ Paste the short link and click “Go”.<br>
+        3️⃣ Once downloaded, choose “Install” <b>${appName}</b>.<br><br>
+        💡 Tip: Each link supports up to 3 devices.<br><br>
+        🔗 Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
+      },
+      ms: {
+        mobile: `<h3>📱 Versi Telefon / Tablet</h3>
+        1️⃣ Klik “Pautan Muat Turun” dan salin pautan.<br>
         2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
-        3️⃣ Tampal pautan dan buka, muat turun serta pasang <b>${appName}</b>.<br><br>
-        💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
-        🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
-      } else {
-        text = `
-        <h3>📺 Versi TVBox</h3>
+        3️⃣ Tampal pautan, buka dan pasang <b>${appName}</b>.<br><br>
+        💡 Nota: Setiap pautan boleh digunakan pada 3 peranti maksimum.<br><br>
+        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        tvbox: `<h3>📺 Versi TV Box / Projektor</h3>
+        1️⃣ Klik “Pautan Muat Turun” dan salin pautan.<br>
+        2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
+        3️⃣ Tampal pautan, buka dan pasang <b>${appName}</b>.<br><br>
+        💡 Nota: Setiap pautan boleh digunakan pada 3 peranti maksimum.<br><br>
+        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`,
+        androidtv: `<h3>📺 Versi Android TV / Google TV</h3>
         1️⃣ Buka aplikasi <b>Downloader (AFTV)</b>.<br>
         2️⃣ Tampal pautan pendek dan tekan “Go”.<br>
         3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
-        💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
-        🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+        💡 Nota: Setiap pautan boleh digunakan pada 3 peranti maksimum.<br><br>
+        🔗 Pautan:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`
       }
-    }
+    };
 
+    text = baseText[currentLang][type];
     tutorial.innerHTML = text;
     copyBtn.classList.remove("hidden");
     copyBtn.onclick = () => {
