@@ -93,19 +93,48 @@
     text-align: left;
   }
 
-  .lang-buttons button, .type-buttons button {
-    background: #00e0ff;
+  /* === 语言按钮样式（上层） === */
+  .lang-buttons {
+    margin-bottom: 1em;
+  }
+  .lang-buttons button {
+    background: #ffb84d;
     border: none;
     color: #000;
-    padding: 10px 16px;
+    padding: 10px 18px;
     margin: 6px;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
     transition: 0.2s;
+    box-shadow: 0 0 8px rgba(255, 184, 77, 0.4);
   }
-  .lang-buttons button:hover,
-  .type-buttons button:hover { background: #00b0cc; }
+  .lang-buttons button:hover {
+    background: #ffcf70;
+    transform: scale(1.05);
+  }
+
+  /* === 教程类型按钮（下层） === */
+  .type-buttons {
+    margin-top: 0.8em;
+    margin-bottom: 0.8em;
+  }
+  .type-buttons button {
+    background: #00e0ff;
+    border: none;
+    color: #000;
+    padding: 10px 18px;
+    margin: 6px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    box-shadow: 0 0 8px rgba(0, 224, 255, 0.4);
+  }
+  .type-buttons button:hover {
+    background: #00b0cc;
+    transform: scale(1.05);
+  }
 
   #copyTutorial {
     background: #ff3b3b;
