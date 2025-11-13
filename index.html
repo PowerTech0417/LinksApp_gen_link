@@ -94,7 +94,12 @@
     text-align: left;
   }
 
-  .lang-buttons button {
+  .tutorial-buttons, .lang-buttons {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .tutorial-buttons button, .lang-buttons button {
     background: #00e0ff;
     border: none;
     color: #000;
@@ -105,7 +110,7 @@
     font-weight: bold;
     transition: 0.2s;
   }
-  .lang-buttons button:hover { background: #00b0cc; }
+  .tutorial-buttons button:hover, .lang-buttons button:hover { background: #00b0cc; }
 
   #copyTutorial {
     background: #ff3b3b;
@@ -139,6 +144,12 @@
   <!-- 📘 教程 -->
   <div class="tutorial-section">
     <h2>📘 安装教程 / Installation Guide / Panduan Pemasangan</h2>
+
+    <div class="tutorial-buttons">
+      <button onclick="setTutorialType('mobile')">📱 手机版教程</button>
+      <button onclick="setTutorialType('tvbox')">📺 TVBox 教程</button>
+    </div>
+
     <div class="lang-buttons">
       <button onclick="showTutorial('zh')">🇨🇳 中文</button>
       <button onclick="showTutorial('en')">🇬🇧 English</button>
@@ -156,8 +167,8 @@
   const jsonURL = "https://raw.githubusercontent.com/PowerTech0417/LinksApp_worker/refs/heads/main/downloads.json";
   let selectedVersion = null;
   let generating = false;
+  let tutorialType = "mobile"; // 默认手机版
 
-  // === 载入版本按钮 ===
   async function loadVersions() {
     const container = document.getElementById("versionContainer");
     try {
@@ -192,25 +203,19 @@
     return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
   }
 
-  // === 生成短链接 ===
   document.getElementById("generate").addEventListener("click", async () => {
     if (generating) return;
     generating = true;
-
     const uid = document.getElementById("uid").value.trim();
     const output = document.getElementById("output");
     const copyBtn = document.getElementById("copyBtn");
-
     if (!uid) { alert("请输入 UID"); generating = false; return; }
     if (!selectedVersion) { alert("请选择一个版本"); generating = false; return; }
-
     output.textContent = "⏳ 正在生成短链接，请稍候...";
-
     try {
       const sig = await sign(`${uid}:${selectedVersion}`, secret);
       const longURL = `${baseDownload}?uid=${encodeURIComponent(uid)}&zone=${selectedVersion}&sig=${sig}`;
       let data, success = false;
-
       for (let i = 0; i < 5; i++) {
         const res = await fetch(workerURL, {
           method: "POST",
@@ -221,9 +226,7 @@
         if (data.shortURL) { success = true; break; }
         await new Promise(r => setTimeout(r, 300));
       }
-
       if (!success) throw new Error(data.error || "无法生成短链接，请稍后重试。");
-
       output.innerHTML = `✅ 短链接生成成功：<br><a href="${data.shortURL}" target="_blank" class="short-link">${data.shortURL}</a>`;
       copyBtn.classList.remove("hidden");
       copyBtn.onclick = () => {
@@ -239,7 +242,11 @@
     }
   });
 
-  // === 教程内容（多语言） ===
+  function setTutorialType(type) {
+    tutorialType = type;
+    document.getElementById("tutorialContent").innerHTML = "👉 请选择语言以查看教程";
+  }
+
   function showTutorial(lang) {
     const tutorial = document.getElementById("tutorialContent");
     const copyBtn = document.getElementById("copyTutorial");
@@ -248,47 +255,59 @@
     let text = "";
 
     if (lang === "zh") {
-      text = `
-      <h3>📱 手机版教程</h3>
-      1️⃣ 点击“生成短链接”并复制链接。<br>
-      2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
-      3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
-
-      <h3>📺 TVBox 教程</h3>
-      1️⃣ 打开 <b>Downloader (AFTV)</b> 应用。<br>
-      2️⃣ 粘贴短链接并点击“Go”。<br>
-      3️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
-
-      💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
-      🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      if (tutorialType === "mobile") {
+        text = `
+        <h3>📱 手机/平板版安装教程</h3>
+        1️⃣ 点击“下载链接”并复制链接。<br>
+        2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
+        3️⃣ 将链接粘贴并打开，点击下载并安装 <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      } else {
+        text = `
+        <h3>📺 TV Box / PProjector 安装教程</h3>
+        1️⃣ 打开 <b>Downloader (AFTV)</b> 应用。<br>
+        2️⃣ 粘贴短链接并点击“Go”。<br>
+        3️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
+        💡 提示：一个下载链接最多支持 3 台设备使用。<br><br>
+        🔗 下载链接：<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      }
     } else if (lang === "en") {
-      text = `
-      <h3>📱 Mobile Version</h3>
-      1️⃣ Click “Generate Short Link” and copy it.<br>
-      2️⃣ Open <b>Google Chrome</b> browser.<br>
-      3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
-
-      <h3>📺 TVBox Version</h3>
-      1️⃣ Open <b>Downloader (AFTV)</b> app.<br>
-      2️⃣ Paste the short link and press “Go”.<br>
-      3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
-
-      💡 Tip: One short link can be used on up to 3 devices.<br><br>
-      🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      if (tutorialType === "mobile") {
+        text = `
+        <h3>📱 Mobile Version Guide</h3>
+        1️⃣ Click “Generate Short Link” and copy it.<br>
+        2️⃣ Open <b>Google Chrome</b> browser.<br>
+        3️⃣ Paste and open the link, download and install <b>${appName}</b>.<br><br>
+        💡 Tip: One short link can be used on up to 3 devices.<br><br>
+        🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      } else {
+        text = `
+        <h3>📺 TVBox Guide</h3>
+        1️⃣ Open <b>Downloader (AFTV)</b> app.<br>
+        2️⃣ Paste the short link and press “Go”.<br>
+        3️⃣ After download completes, choose “Install” <b>${appName}</b>.<br><br>
+        💡 Tip: One short link can be used on up to 3 devices.<br><br>
+        🔗 Short Link:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      }
     } else {
-      text = `
-      <h3>📱 Versi Mudah Alih</h3>
-      1️⃣ Klik “Generate Short Link” dan salin pautan.<br>
-      2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
-      3️⃣ Tampal pautan dan buka, muat turun serta pasang <b>${appName}</b>.<br><br>
-
-      <h3>📺 Versi TVBox</h3>
-      1️⃣ Buka aplikasi <b>Downloader (AFTV)</b>.<br>
-      2️⃣ Tampal pautan pendek dan tekan “Go”.<br>
-      3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
-
-      💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
-      🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      if (tutorialType === "mobile") {
+        text = `
+        <h3>📱 Versi Mudah Alih</h3>
+        1️⃣ Klik “Generate Short Link” dan salin pautan.<br>
+        2️⃣ Buka pelayar <b>Google Chrome</b>.<br>
+        3️⃣ Tampal pautan dan buka, muat turun serta pasang <b>${appName}</b>.<br><br>
+        💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
+        🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      } else {
+        text = `
+        <h3>📺 Versi TVBox</h3>
+        1️⃣ Buka aplikasi <b>Downloader (AFTV)</b>.<br>
+        2️⃣ Tampal pautan pendek dan tekan “Go”.<br>
+        3️⃣ Selepas muat turun selesai, pilih “Install” <b>${appName}</b>.<br><br>
+        💡 Nota: Satu pautan boleh digunakan sehingga 3 peranti.<br><br>
+        🔗 Pautan Pendek:<br><a href="${shortURL}" target="_blank" class="short-link">${shortURL}</a>`;
+      }
     }
 
     tutorial.innerHTML = text;
