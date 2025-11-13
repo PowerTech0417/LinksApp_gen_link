@@ -284,9 +284,9 @@
     }
 
     const warn = {
-      zh: "⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！同样设备没有限制访问。",
-      en: "⚠️ Please use the correct device to open the download link. The same device has no access limit.",
-      ms: "⚠️ Sila gunakan peranti yang betul untuk membuka pautan muat turun. Peranti yang sama tidak mempunyai had akses."
+      zh: "⚠️ 请使用相对应的设备输入下载链接，不要用其他设备打开！同样设备没有限制访问。🚫别在这里点击下载链接",
+      en: "⚠️ Please use the correct device to open the download link. The same device has no access limit.🚫Do not click the download link here.",
+      ms: "⚠️ Sila gunakan peranti yang betul untuk membuka pautan muat turun. Peranti yang sama tidak mempunyai had akses.🚫Jangan klik pautan muat turun di sini."
     };
 
     const texts = {
@@ -296,20 +296,23 @@
         2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
         3️⃣ 粘贴链接并打开，下载安装 <b>${appName}</b>。<br><br>
         💡 提示：每个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>${warn.zh}<br><br>
-        🔗 下载链接：<a href="${shortURL}" target="_blank">${shortURL}</a>`,
+        🔗 下载链接：
+        <a href="${shortURL}" target="_blank">${shortURL}</a>`,
         tvbox: `<h3>📺 TV Box / 投影仪 安装教程</h3>
         1️⃣ 点击“下载链接”并复制。<br>
         2️⃣ 打开 <b>Google Chrome</b> 浏览器。<br>
         3️⃣ 粘贴链接并打开，下载安装 <b>${appName}</b>。<br><br>
         💡 提示：每个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>${warn.zh}<br><br>
-        🔗 下载链接：<a href="${shortURL}" target="_blank">${shortURL}</a>`,
+        🔗 下载链接：
+        <a href="${shortURL}" target="_blank">${shortURL}</a>`,
         androidtv: `<h3>📺 Android TV / Google TV 安装教程</h3>
         1️⃣ 打开 <b>Google Play 商店</b>。<br>
         2️⃣ 搜索并安装 <b>Downloader (AFT)</b> 应用。<br>
         3️⃣ 打开 <b>Downloader (AFT)</b>，粘贴短链接并点击“Go”。<br>
         4️⃣ 下载完成后选择“安装” <b>${appName}</b>。<br><br>
         💡 提示：每个下载链接最多支持 <b>3 台设备</b> 使用，超过 3 次将自动失效。<br>${warn.zh}<br><br>
-        🔗 下载链接：<a href="${shortURL}" target="_blank">${shortURL}</a>`
+        🔗 下载链接：
+        <a href="${shortURL}" target="_blank">${shortURL}</a>`
       },
       en: {
         mobile: `<h3>📱 Mobile / Tablet Installation</h3>
